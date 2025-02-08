@@ -1,6 +1,5 @@
 import bluetooth
 import time
-import machine
 from machine import Pin
 from utime import sleep
 
@@ -20,12 +19,34 @@ def start_advertising(name="PicoW_Bluetooth", interval=1000):
     payload = create_advertising_payload(name)
     ble.gap_advertise(interval, payload, connectable=True)
 
+def on_connect(event, data):
+    conn_handle, addr_type, addr = data
+    print(f"Connected to device: {addr}")
+    # Stop advertising once connected
+    ble.gap_advertise(None)
+
+def on_disconnect(event, data):
+    conn_handle, reason = data
+    print("Disconnected, reason:", reason)
+    # Restart advertising after disconnection
+    start_advertising()
+
 # Initialize LED
 pin = Pin(16, Pin.OUT)
 
-# Start advertising the BLE device (ONLY ONCE)
+# Start advertising the BLE device
 ble.active(True)  # Turn on the BLE module
-start_advertising(name="PicoW_Bluetooth", interval=1000)  # Set 1s interval
+start_advertising()  # Start advertising
+
+# Register the callback functions
+def ble_irq(event, data):
+    if event == 1:  # Central connected
+        on_connect(event, data)
+    elif event == 2:  # Central disconnected
+        on_disconnect(event, data)
+
+ble.irq(ble_irq)
+
 
 print("Advertising started. Look for 'PicoW_Bluetooth' on your phone.")
 print("LED starts flashing...")
@@ -34,7 +55,7 @@ print("LED starts flashing...")
 try:
     while True:
         pin.toggle()
-        sleep(1)  # LED blinks every 1s
+        sleep(1)  # sleep 1 sec
 except KeyboardInterrupt:
     pin.off()
     print("Finished.")
