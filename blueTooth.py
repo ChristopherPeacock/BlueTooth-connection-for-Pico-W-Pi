@@ -15,17 +15,17 @@ def create_advertising_payload(name):
     return payload
 
 # Function to start BLE advertising
-def start_advertising(name="PicoW_Bluetooth", interval=100):
+def start_advertising(name="PicoW_Bluetooth", interval=1000):
     print("Starting advertising...")
     payload = create_advertising_payload(name)
-    ble.gap_advertise(interval, payload)
+    ble.gap_advertise(interval, payload, connectable=True)
 
 # Initialize LED
 pin = Pin(16, Pin.OUT)
 
-# Start advertising the BLE device
+# Start advertising the BLE device (ONLY ONCE)
 ble.active(True)  # Turn on the BLE module
-start_advertising()  # Start advertising
+start_advertising(name="PicoW_Bluetooth", interval=1000)  # Set 1s interval
 
 print("Advertising started. Look for 'PicoW_Bluetooth' on your phone.")
 print("LED starts flashing...")
@@ -34,8 +34,7 @@ print("LED starts flashing...")
 try:
     while True:
         pin.toggle()
-        sleep(1)  # sleep 1 sec
-        start_advertising()  # Start advertising
+        sleep(1)  # LED blinks every 1s
 except KeyboardInterrupt:
     pin.off()
     print("Finished.")
