@@ -26,7 +26,7 @@ def on_connect(event, data):
     ble.gap_advertise(None)
 
 def on_disconnect(event, data):
-    conn_handle, reason = data
+    reason = data
     print("Disconnected, reason:", reason)
     # Restart advertising after disconnection
     start_advertising()
@@ -46,7 +46,6 @@ def ble_irq(event, data):
         on_disconnect(event, data)
 
 ble.irq(ble_irq)
-
 
 print("Advertising started. Look for 'PicoW_Bluetooth' on your phone.")
 print("LED starts flashing...")
