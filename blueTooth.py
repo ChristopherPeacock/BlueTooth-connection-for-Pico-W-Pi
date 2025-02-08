@@ -3,6 +3,8 @@ import time
 from machine import Pin
 from utime import sleep
 
+connectionFlag = False
+
 # Create BLE object
 ble = bluetooth.BLE()
 
@@ -20,14 +22,20 @@ def start_advertising(name="PicoW_Bluetooth", interval=1000):
     ble.gap_advertise(interval, payload, connectable=True)
 
 def on_connect(event, data):
+    global connectionFlag
+    pin.on()
     conn_handle, addr_type, addr = data
     print(f"Connected to device: {addr}")
+    connectionFlag = True
     # Stop advertising once connected
-    ble.gap_advertise(None)
-
+    
 def on_disconnect(event, data):
+    global connectionFlag
     reason = data
     print("Disconnected, reason:", reason)
+    connectionFlag = False
+    # Restart advertising after disconnection
+    start_advertising()
     # Restart advertising after disconnection
     start_advertising()
 
@@ -52,9 +60,12 @@ print("LED starts flashing...")
 
 # Keep the Pico W running and advertising with flashing LED
 try:
-    while True:
+    while connectionFlag == False:
         pin.toggle()
         sleep(1)  # sleep 1 sec
+    if connectionFlag == True:
+        while True:
+            pin.on()
 except KeyboardInterrupt:
     pin.off()
     print("Finished.")
