@@ -18,7 +18,8 @@ CHARACTERISTIC_UUID = bluetooth.UUID("0000A001-0000-1000-8000-00805F9B34FB")  # 
 class BLEDevice:
     def __init__(self, name="PicoW_Bluetooth"):
         self.name = name
-        self.connectionFlag = False
+        self.connected = False
+        self.conn_handle = None
         self.ble = bluetooth.BLE()  # Initialize the BLE object
         self.ble.active(True)  # Activate BLE
         self.ble.irq(self.ble_irq)  # Set the IRQ handler for BLE events
@@ -35,7 +36,6 @@ class BLEDevice:
         # Register the service
         ((self.characteristic_handle,),) = self.ble.gatts_register_services([self.service])
         
-        self.conn_handle = None  #Store connection handle
         self.start_advertising()
   
     def start_advertising(self, interval=100):
@@ -47,7 +47,7 @@ class BLEDevice:
     def create_advertising_payload(self):
         """Create a proper advertising packet"""
         payload = bytearray()
-        payload.extend(bytes([len(self.name) + 1, 0x09]))  #Length and type for Complete Local Name
+        payload.extend(bytes([len(self.name) + 1, 0x09]))  # Length and type for Complete Local Name
         payload.extend(self.name.encode('utf-8'))
         return payload
 
@@ -68,17 +68,15 @@ class BLEDevice:
     def on_connect(self, conn_handle, addr_type, addr):
         """Handle BLE connection"""
         print(f"Connected to {addr}")
-        self.conn_handle = conn_handle  #Store connection handle
+        self.conn_handle = conn_handle  # Store connection handle
+        print(f"Connection handle: {self.conn_handle}")
         self.connected = True
-        while True:
-            self.send_payload()
-            time.sleep(1)
 
     def on_disconnect(self, conn_handle, reason):
         """Handle BLE disconnection"""
         print(f"Disconnected. Reason: {reason}")
-        self.connectionFlag = False
-        self.conn_handle = None  #Clear connection handle
+        self.connected = False
+        self.conn_handle = None  # Clear connection handle
         self.start_advertising()
 
     def ble_irq(self, event, data):
@@ -90,7 +88,21 @@ class BLEDevice:
             conn_handle, reason = data
             self.on_disconnect(conn_handle, reason)
 
+    def run(self):
+        print("Advertising started. Look for 'PicoW_Bluetooth' on your phone.")
+        print("LED starts flashing...")
+        try:
+            while True:
+                if not self.connected:
+                    self.pin.toggle()
+                    time.sleep(1)  # sleep 1 sec
+                else:
+                    self.pin.on()
+                    time.sleep(1)  # sleep 1 sec to avoid busy-waiting
+        except KeyboardInterrupt:
+            self.pin.off()
+            print("Finished.")
+
 # Create and run the BLE device
 ble_device = BLEDevice()
-while True:
-    time.sleep(1)
+ble_device.run()
