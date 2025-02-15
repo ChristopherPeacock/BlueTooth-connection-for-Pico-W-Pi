@@ -71,10 +71,11 @@ class BLEDevice:
         self.conn_handle = conn_handle  # Store connection handle
         print(f"Connection handle: {self.conn_handle}")
         self.connected = True
-
+        
+        
     def on_disconnect(self, conn_handle, reason):
         """Handle BLE disconnection"""
-        print(f"Disconnected. Reason: {reason}")
+        print(f"Disconnected. Reason: {reason} {conn_handle}")
         self.connected = False
         self.conn_handle = None  # Clear connection handle
         self.start_advertising()
@@ -85,6 +86,7 @@ class BLEDevice:
             conn_handle, addr_type, addr = data
             self.on_connect(conn_handle, addr_type, addr)
         elif event == _IRQ_CENTRAL_DISCONNECT:
+            print("Disconnected")
             conn_handle, reason = data
             self.on_disconnect(conn_handle, reason)
 
@@ -93,6 +95,9 @@ class BLEDevice:
         print("LED starts flashing...")
         try:
             while True:
+                if self.connected:
+                    self.send_payload()
+                    
                 if not self.connected:
                     self.pin.toggle()
                     time.sleep(1)  # sleep 1 sec
