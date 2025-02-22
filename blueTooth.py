@@ -23,7 +23,7 @@ class BLEDevice:
         self.ble = bluetooth.BLE()  # Initialize the BLE object
         self.ble.active(True)  # Activate BLE
         self.ble.irq(self.ble_irq)  # Set the IRQ handler for BLE events
-        self.pin = Pin(16, Pin.OUT)  # Initialize the pin for the LED
+        self.pin = Pin("LED", Pin.OUT)  # Initialize the pin for the LED
 
         # Define GATT service with correct structure
         self.service = (
@@ -97,13 +97,12 @@ class BLEDevice:
             while True:
                 if self.connected:
                     self.send_payload()
+                    self.pin.on()
+                    time.sleep(1)
                     
                 if not self.connected:
                     self.pin.toggle()
                     time.sleep(1)  # sleep 1 sec
-                else:
-                    self.pin.on()
-                    time.sleep(1)  # sleep 1 sec to avoid busy-waiting
         except KeyboardInterrupt:
             self.pin.off()
             print("Finished.")
